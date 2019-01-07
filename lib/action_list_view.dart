@@ -1,57 +1,3 @@
-import 'package:bender/bender_vm.dart';
-import 'package:bendroid/constants.dart';
-import 'package:bendroid/history_view.dart';
-import 'package:bendroid/settings_controller.dart';
-import 'package:bendroid/settings_view.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-Future<BenderAdapter> getBenderAdapter() async {
-  final adapter = await loadAdapter();
-
-  if (adapter == hipChatAdapter) {
-    final hipChatEndpoint = await loadHipChatEndpoint();
-    final hipChatToken = await loadHipChatToken();
-    return getHipChatAdapter(
-        endpoint: Uri.parse(hipChatEndpoint), token: hipChatToken);
-  }
-
-  if (adapter == slackAdapter) {
-    return getSlackAdapter(token: '');
-  }
-
-  return getConsoleAdapter();
-}
-
-void main() {
-  runApp(BendroidApp());
-}
-
-class BendroidApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Bendroid',
-      theme: ThemeData(
-        primarySwatch: Colors.lightGreen,
-      ),
-      home: ActionListView(
-        title: 'Bendroid Actions',
-      ),
-    );
-  }
-}
-
-class ActionListView extends StatefulWidget {
-
-  ActionListView({Key key, this.title='Bendroid Actions', this.info}) : super(key: key);
-
-  final Map info;
-  final String title;
-
-  @override
-  _ActionListViewState createState() => _ActionListViewState();
-}
 
 class _ActionListViewState extends State<ActionListView> {
   static const platform = const MethodChannel('app.channel.shared.data');
@@ -60,17 +6,12 @@ class _ActionListViewState extends State<ActionListView> {
 
   String _prUrl = '';
 
-
   TextEditingController _urlController = TextEditingController(text: '');
 
   @override
   void initState() {
     super.initState();
     getSharedText();
-    // getApplicationDocumentsDirectory().then((Directory directory) {
-    //   jsonFile = new File(directory.path + '/' + Constants.fileName);
-    //   fileExists = jsonFile
-    // });
   }
   @override
 
