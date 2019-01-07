@@ -1,33 +1,70 @@
-
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:bendroid/action_list_view.dart';
 import 'package:bendroid/constants.dart';
-import 'package:bendroid/main.dart';
+import 'package:bendroid/settings_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 class HistoryView extends StatefulWidget {
+  
+  HistoryView({Key key, this.title}) : super(key: key);
+
+  final String title;
+
   @override
   State<StatefulWidget> createState() => _HistoryViewState();
 }
 
 class _HistoryViewState extends State<HistoryView>{
 
+  static const platform = const MethodChannel('app.channel.shared.data');
+  File myHistoryFile;
+  String directoryPath;
+  bool fileExists = false;
+  Map <String, dynamic> history = {};
 
-
-  @override void initState() {
+  @override void initState(){
     super.initState();
-    //  getApplicationDocumentsDirectory().then((Directory directory) {
-    //   jsonFile = new File(directory.path + '/' + Constants.fileName);
-    //   fileExists = jsonFile
-    // });
+    getApplicationDocumentsDirectory().then((Directory dir) {
+      directoryPath = dir.path;
+      myHistoryFile = new File(directoryPath + '/' + Constants.fileName);
+      fileExists = myHistoryFile.existsSync();
+      if(fileExists){
+        this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
+      }
+    }).then((_){ 
+      print('history \n$history');
+      getSharedText();});
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: Key('settings'),
       appBar: AppBar(
         key: Key('settings-app-bar'),
+        leading: const Icon(Icons.child_care),
         title: const Text('History'),
+        actions:
+          <Widget>[ 
+            PopupMenuButton<String>(
+              icon: const Icon(
+                  Icons.dehaze,
+                ),
+              onSelected: choiceAction,
+              itemBuilder: (BuildContext context) {
+                return Constants.choices.map((String choice){
+                  return PopupMenuItem<String>(
+                    value:choice,
+                    child:Text(choice),
+                  );
+                }).toList();
+              }
+            ),
+          ],
         automaticallyImplyLeading: true,
       ),
       body: _body(),
@@ -35,10 +72,6 @@ class _HistoryViewState extends State<HistoryView>{
   }
 
     Widget _body() {
-      final history = 
-      [{'name':'pr0','url':'http://0','id':'0'},
-      {'name':'pr1','url':'http://1','id':'1'},
-      {'name':'MSODP-1042 delete log, delete unnecessary','url':'https://github.com/Workiva/datatables/pull/7788','id':'2'}];
       if (history.isEmpty) {
         return Center(
           child: Text(
@@ -49,28 +82,77 @@ class _HistoryViewState extends State<HistoryView>{
           key: Key('empty-center'),
         );
       }
+      final keys = history.keys; 
 
       return ListView(
         key: Key('<history-list'),
-        children: history.map(historyItem).toList(),
+        children: keys.map((key) => historyItem(key.toString(), history['$key'])).toList()
       );
     }
-    Widget historyItem(item) {
+    Widget historyItem(prName, prUrl) {
       return ListTile(
-        key: Key(item['id']),
-        title: Text(item['name']),
-        subtitle: Text(item['url']),
-        onTap: (){historyTapHandler(item);},
+        key: Key(prUrl),
+        title: Text(prName),
+        subtitle: Text(prUrl),
+        onTap: (){historyTapHandler(prName);},
       );
-    }
-    void historyTapHandler(item) {
-      print('this is my item: $item');
-      Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ActionListView(info: item),
-      ),
-    );
     }
 
+    void choiceAction(String choice) {
+      switch (choice) {
+        default:
+          handleSettings();
+      }
+    }
+
+    void createFile(Map<String,String> content){
+      File myNewHistory = new File(directoryPath + '/' + Constants.fileName);
+      myNewHistory.createSync();
+      fileExists = true;
+      myNewHistory.writeAsStringSync(json.encode(content));
+    }
+
+    void getSharedText() async {
+      var sharedData = await platform.invokeMethod("getSharedPrUrl");
+      if (sharedData != null) {
+        List link = sharedData.replaceAll(Constants.homeLink,'').split('/');
+        String prName = link[0]+'-'+ link[link.length-1];
+        writeToFile(prName, sharedData);
+        print('\n\n history before navigation: $history');
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ActionListView(prName: prName, prHistory: history),
+          ),
+        );
+      }
+    }
+
+    void handleSettings() {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => SettingsView(),
+        ),
+      );
+    }
+    void historyTapHandler(prName) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ActionListView(prName: prName, prHistory: history),
+        ),
+      );
+    }
+
+    void writeToFile(String prName, String prUrl) {
+      Map <String, dynamic> content = {prName: prUrl};
+      if(fileExists){
+        Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
+        myHistoryContent.addAll(content);
+        myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+        this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
+      }else{
+        createFile(content);
+      }
+    }
+    
 
 }

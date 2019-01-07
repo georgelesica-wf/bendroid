@@ -1,97 +1,48 @@
 
+import 'package:bender/bender_vm.dart';
+import 'package:bendroid/main.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class ActionListView extends StatefulWidget {
+
+  ActionListView({Key key, this.title='Bendroid Actions', this.prName, this.prHistory}) : super(key: key);
+
+  final String prName;
+  final Map prHistory;
+  final String title;
+
+  @override
+  _ActionListViewState createState() => _ActionListViewState();
+}
+
 class _ActionListViewState extends State<ActionListView> {
-  static const platform = const MethodChannel('app.channel.shared.data');
 
   bool _isWaiting = false;
 
   String _prUrl = '';
+  String _prName = '';
 
   TextEditingController _urlController = TextEditingController(text: '');
 
-  @override
-  void initState() {
+  @override void initState() {
     super.initState();
-    getSharedText();
+    _prName = widget.prName;
+    print('\N\NNAME: $_prName,\n\n url:${widget.prHistory}');
+    _prUrl = widget.prHistory['$_prName'];
+    _urlController.text = widget.prName;
   }
-  @override
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(Icons.child_care),
         title: Text(widget.title),
-        actions:
-          <Widget>[ 
-            PopupMenuButton<String>(
-              icon: const Icon(
-                  Icons.dehaze,
-                ),
-              onSelected: choiceAction,
-              itemBuilder: (BuildContext context) {
-                return Constants.choices.map((String choice){
-                  return PopupMenuItem<String>(
-                    value:choice,
-                    child:Text(choice),
-                  );
-                }).toList();
-              }
-            ),
-          ],
         automaticallyImplyLeading: true,
       ),
       body: body(),
     );
-  }
-
-  void choiceAction(String choice) {
-    switch (choice) {
-      case 'History':
-        handleHistory();
-        break;
-      default:
-        handleSettings();
-    }
-  }
-
-  void getSharedText() async {
-    // print('this is my widget info : url - ${widget.info}');
-    var sharedData = widget.info == null ? await platform.invokeMethod("getSharedPrUrl"): widget.info['url'] ;
-    if (sharedData != null) {
-      List link = sharedData.replaceAll(Constants.homeLink,'').split('/');
-      String name = link[0]+'-'+ link[link.length-1];
-      // if(!prInfo){
-      //   Map<String, String> newPR = {'url' : '$sharedData'};
-      // }
-    
-      setState(() {
-        _prUrl = sharedData;
-        // json.encode(localStorage);
-        // ['url'];
-        _urlController.text = sharedData;
-        // ['name'];
-      });
-    }
-  }
-
-  void handleHistory() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => HistoryView(),
-      ),
-    );
-  }
-
-  void handleSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SettingsView(),
-      ),
-    );
-  }
-
-  void submit(){
-    print('we done url:$_prUrl');
   }
 
   Widget actionList() {
@@ -143,9 +94,10 @@ class _ActionListViewState extends State<ActionListView> {
       keyboardType: TextInputType.url,
       onChanged: (value) {
         setState(() {
-          _prUrl = value;
+          _prName = value;
         });
       },
+
       style: Theme.of(context).textTheme.title,
       decoration: InputDecoration(
         hintText: 'Pull request URL',
