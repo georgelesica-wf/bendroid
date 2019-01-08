@@ -82,31 +82,36 @@ class _HistoryViewState extends State<HistoryView>{
           key: Key('empty-center'),
         );
       }
-      final keys = history.keys; 
 
+      final List<String> keys = history.keys.toList();
+      print('before sorting  $keys');
+      keys.sort((key,nextKey) => history['$nextKey']['useTime'] - history['$key']['useTime']);
+
+      print('after sorting  $keys');
       return ListView(
         key: Key('<history-list'),
         children: keys.map((key) => historyItem(key.toString(), history['$key'])).toList()
+        
       );
     }
-    Widget historyItem(prName, prUrl) {
+    Widget historyItem(prName, prInfo) {
+      print('name $prName, url: ${prInfo['url']}, useTime: ${prInfo['useTime']} ');
       return ListTile(
-        key: Key(prUrl),
+        key: Key(prInfo['url']),
         title: Text(prName),
-        subtitle: Text(prUrl),
-        onTap: (){historyTapHandler(prName);},
+        subtitle: Text(prInfo['useTime'].toString()),
+        onTap: () => historyTapHandler(prName),
       );
     }
 
-    void choiceAction(String choice) {
+    void choiceAction(choice) {
       switch (choice) {
         default:
           handleSettings();
       }
     }
 
-    void createFile(Map<String, dynamic> content){
-      print('creating file');
+    void createFile(content){
       myHistoryFile.createSync();
       fileExists = true;
       myHistoryFile.writeAsStringSync(json.encode(content));
@@ -120,7 +125,6 @@ class _HistoryViewState extends State<HistoryView>{
         List link = sharedData.replaceAll(Constants.homeLink,'').split('/');
         String prName = link[0]+'-'+ link[link.length-1];
         writeToFile(prName, sharedData);
-        print('\n\n history before navigation: $history');
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => ActionListView(prName: prName, prHistory: history),
@@ -137,6 +141,7 @@ class _HistoryViewState extends State<HistoryView>{
       );
     }
     void historyTapHandler(prName) {
+      updateFile(prName);
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => ActionListView(prName: prName, prHistory: history),
@@ -144,16 +149,21 @@ class _HistoryViewState extends State<HistoryView>{
       );
     }
 
-    void writeToFile(String prName, String prUrl) {
-      print('will write to file, file exists: $fileExists');
-      Map <String, dynamic> content = {prName: prUrl};
+    void updateFile(prName){
+        Map<String, dynamic> content = {'url': history['$prName']['url'], 'useTime': DateTime.now().millisecondsSinceEpoch};
+        Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
+        myHistoryContent.update(prName , (_) => content);
+        myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+        this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
+    }
+
+    void writeToFile(prName, prUrl) {
+      Map <String, dynamic> content = {prName: {'url': prUrl, 'useTime': DateTime.now().millisecondsSinceEpoch}};
       if(fileExists){
         Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
         myHistoryContent.addAll(content);
         myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-           print('will write to file');
         this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
-        print('hiiiistory changed $history');
       }else{
         createFile(content);
       }
