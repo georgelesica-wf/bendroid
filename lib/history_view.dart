@@ -35,9 +35,9 @@ class _HistoryViewState extends State<HistoryView>{
       if(fileExists){
         this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
       }
-    }).then((_){ 
-      print('history \n$history');
-      getSharedText();});
+    }).then((_){
+    print('\n\nhistory $history,               file exist: $fileExists ');
+    getSharedText();});
   }
 
   @override
@@ -105,11 +105,13 @@ class _HistoryViewState extends State<HistoryView>{
       }
     }
 
-    void createFile(Map<String,String> content){
-      File myNewHistory = new File(directoryPath + '/' + Constants.fileName);
-      myNewHistory.createSync();
+    void createFile(Map<String, dynamic> content){
+      print('creating file');
+      myHistoryFile.createSync();
       fileExists = true;
-      myNewHistory.writeAsStringSync(json.encode(content));
+      myHistoryFile.writeAsStringSync(json.encode(content));
+      this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
+      print('file created  $fileExists, new history: $history');
     }
 
     void getSharedText() async {
@@ -143,12 +145,15 @@ class _HistoryViewState extends State<HistoryView>{
     }
 
     void writeToFile(String prName, String prUrl) {
+      print('will write to file, file exists: $fileExists');
       Map <String, dynamic> content = {prName: prUrl};
       if(fileExists){
         Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
         myHistoryContent.addAll(content);
         myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+           print('will write to file');
         this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
+        print('hiiiistory changed $history');
       }else{
         createFile(content);
       }
