@@ -36,7 +36,6 @@ class _HistoryViewState extends State<HistoryView>{
         this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
       }
     }).then((_){
-    print('\n\nhistory $history,               file exist: $fileExists ');
     getSharedText();});
   }
 
@@ -83,19 +82,13 @@ class _HistoryViewState extends State<HistoryView>{
         );
       }
 
-      final List<String> keys = history.keys.toList();
-      print('before sorting  $keys');
-      keys.sort((key,nextKey) => history['$nextKey']['useTime'] - history['$key']['useTime']);
-
-      print('after sorting  $keys');
       return ListView(
         key: Key('<history-list'),
-        children: keys.map((key) => historyItem(key.toString(), history['$key'])).toList()
-        
+        children: sortHistoryKeys().map((key) => historyItem(key.toString(), history['$key'])).toList()
       );
     }
+
     Widget historyItem(prName, prInfo) {
-      print('name $prName, url: ${prInfo['url']}, useTime: ${prInfo['useTime']} ');
       return ListTile(
         key: Key(prInfo['url']),
         title: Text(prName),
@@ -116,7 +109,6 @@ class _HistoryViewState extends State<HistoryView>{
       fileExists = true;
       myHistoryFile.writeAsStringSync(json.encode(content));
       this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));
-      print('file created  $fileExists, new history: $history');
     }
 
     void getSharedText() async {
@@ -149,6 +141,13 @@ class _HistoryViewState extends State<HistoryView>{
       );
     }
 
+    List <String> sortHistoryKeys() {
+      final List<String> keys = history.keys.toList();
+      // Sort keys from the most recent to the oldest one
+      keys.sort((key,nextKey) => history['$nextKey']['useTime'] - history['$key']['useTime']);
+      return keys;
+    }
+
     void updateFile(prName){
         Map<String, dynamic> content = {'url': history['$prName']['url'], 'useTime': DateTime.now().millisecondsSinceEpoch};
         Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
@@ -161,6 +160,10 @@ class _HistoryViewState extends State<HistoryView>{
       Map <String, dynamic> content = {prName: {'url': prUrl, 'useTime': DateTime.now().millisecondsSinceEpoch}};
       if(fileExists){
         Map<String, dynamic> myHistoryContent = json.decode(myHistoryFile.readAsStringSync());
+        if(myHistoryContent.keys.length >= Constants.historyLimit){
+          final keys = sortHistoryKeys();
+          myHistoryContent.remove(keys[ Constants.historyLimit-1]);
+        }
         myHistoryContent.addAll(content);
         myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
         this.setState(() => history = json.decode(myHistoryFile.readAsStringSync()));

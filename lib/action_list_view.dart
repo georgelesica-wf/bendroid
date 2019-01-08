@@ -29,7 +29,6 @@ class _ActionListViewState extends State<ActionListView> {
   @override void initState() {
     super.initState();
     _prName = widget.prName;
-    print('\N\NNAME: $_prName,\n\n url:${widget.prHistory}');
     _prUrl = widget.prHistory['$_prName']['url'];
     _urlController.text = widget.prName;
   }
