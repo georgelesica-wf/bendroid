@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String adapterKey = 'adapter';
 
-const defaultHipChatEndpoint = 'https://workiva.hipchat.com/v2/user/@Bender/message';
+const defaultHipChatEndpoint =
+    'https://workiva.hipchat.com/v2/user/@Bender/message';
 const String gitHubTokenKey = 'gitHub-token';
 const String hipChatAdapter = 'HipChat';
 const String hipChatEndpointKey = 'hipchat-endpoint';

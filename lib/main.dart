@@ -32,8 +32,9 @@ class BendroidApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.lightGreen,
       ),
-      home: HistoryView(title: 'History',),
+      home: HistoryView(
+        title: 'History',
+      ),
     );
   }
 }
-
