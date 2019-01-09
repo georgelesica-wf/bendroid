@@ -18,7 +18,8 @@ dependencies:
       url: git@github.com:georgelesica-wf/bender.dart.git
       ref: master
   path_provider: ^0.4.1
-
+  github: ^4.0.0
+  
 dev_dependencies:
   flutter_launcher_icons: ^0.7.0
   flutter_test:

@@ -6,6 +6,7 @@ import 'package:bendroid/constants.dart';
 import 'package:bendroid/settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:github/server.dart';
 import 'package:path_provider/path_provider.dart';
 
 class HistoryView extends StatefulWidget {
@@ -20,7 +21,6 @@ class HistoryView extends StatefulWidget {
 class _HistoryViewState extends State<HistoryView> {
   static const platform = const MethodChannel('app.channel.shared.data');
   File myHistoryFile;
-  String directoryPath;
   bool fileExists = false;
   Map<String, dynamic> history = {};
 
@@ -112,17 +112,25 @@ class _HistoryViewState extends State<HistoryView> {
   @override
   void initState() {
     super.initState();
-    getApplicationDocumentsDirectory().then((Directory dir) {
-      directoryPath = dir.path;
-      myHistoryFile = new File(directoryPath + '/' + fileName);
-      fileExists = myHistoryFile.existsSync();
-      if (fileExists) {
-        this.setState(
-            () => history = json.decode(myHistoryFile.readAsStringSync()));
-      }
-    }).then((_) {
-      getSharedText();
-    });
+    setDocumentInformation();
+  }
+
+  void setDocumentInformation() async {
+    Directory directory = await getApplicationDocumentsDirectory();
+    File myHistoryFile = new File(directory.path + '/' + fileName);
+    bool fileExists = myHistoryFile.existsSync();
+    Map<String, dynamic> myHistory =
+        json.decode(await myHistoryFile.readAsString());
+    if (fileExists) {
+      this.setState(() {
+        history = myHistory;
+      });
+    }
+    getSharedText();
+
+    // var github = createGitHubClient();
+    // github.pullRequests
+    //     .get(new RepositorySlug("olesiathoms-wk", "bendroid"), 1);
   }
 
   List<String> sortHistoryKeys() {
@@ -133,40 +141,34 @@ class _HistoryViewState extends State<HistoryView> {
     return keys;
   }
 
-  void updateFile(String prName) {
+  void updateFile(String prName) async {
     Map<String, dynamic> newContent = {
       'url': history['$prName']['url'],
       'useTime': DateTime.now().millisecondsSinceEpoch
     };
-    Map<String, dynamic> myHistoryContent;
-    myHistoryFile
-        .readAsString()
-        .then((String content) => myHistoryContent = json.decode(content))
-        .then((_) {
-      myHistoryContent.update(prName, (_) => newContent);
-      myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-      this.setState(() => history = myHistoryContent);
-    });
+    Map<String, dynamic> myHistoryContent =
+        json.decode(await myHistoryFile.readAsString());
+    myHistoryContent.update(prName, (_) => newContent);
+    myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+    this.setState(() => history = myHistoryContent);
+    // });
   }
 
-  void writeToFile(String prName, String prUrl) {
+  void writeToFile(String prName, String prUrl) async {
     Map<String, dynamic> newContent = {
       prName: {'url': prUrl, 'useTime': DateTime.now().millisecondsSinceEpoch}
     };
     if (fileExists) {
-      Map<String, dynamic> myHistoryContent;
-      myHistoryFile
-          .readAsString()
-          .then((String content) => myHistoryContent = json.decode(content))
-          .then((_) {
-        if (myHistoryContent.keys.length >= historyLimit) {
-          final keys = sortHistoryKeys();
-          myHistoryContent.remove(keys[historyLimit - 1]);
-        }
-        myHistoryContent.addAll(newContent);
-        myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-        this.setState(() => history = myHistoryContent);
-      });
+      Map<String, dynamic> myHistoryContent =
+          json.decode(await myHistoryFile.readAsString());
+
+      if (myHistoryContent.keys.length >= historyLimit) {
+        final keys = sortHistoryKeys();
+        myHistoryContent.remove(keys[historyLimit - 1]);
+      }
+      myHistoryContent.addAll(newContent);
+      myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+      this.setState(() => history = myHistoryContent);
     } else {
       createFile(newContent);
     }
