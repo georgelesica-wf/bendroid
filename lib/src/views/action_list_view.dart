@@ -1,16 +1,14 @@
 import 'package:bender/bender_vm.dart';
 import 'package:bendroid/main.dart';
+import 'package:bendroid/src/models/pull_request.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class ActionListView extends StatefulWidget {
-  final String prName;
+  final PullRequest pullRequest;
 
-  final Map prHistory;
-  final String title;
   ActionListView(
-      {Key key, this.title = 'Bendroid Actions', this.prName, this.prHistory})
+      {Key key, this.pullRequest})
       : super(key: key);
 
   @override
@@ -19,11 +17,6 @@ class ActionListView extends StatefulWidget {
 
 class _ActionListViewState extends State<ActionListView> {
   bool _isWaiting = false;
-
-  String _prUrl = '';
-  String _prName = '';
-
-  TextEditingController _urlController = TextEditingController(text: '');
 
   Widget actionItem(Action action) {
     return ListTile(
@@ -60,41 +53,19 @@ class _ActionListViewState extends State<ActionListView> {
       setState(() {
         _isWaiting = true;
       });
-
-      getBenderAdapter().then((adapter) {
-        return adapter(action.message);
-      }).then((receipt) {
-        if (receipt.wasSuccessful) {
-          print('Bendroid Message Succeeded');
-        } else {
-          print(receipt.toString());
-        }
-
-        setState(() {
-          _isWaiting = false;
-        });
-      });
+      dispatchAction(action);
     };
   }
 
   Widget body() {
-    return Column(
-      key: Key('body'),
-      children: <Widget>[
-        urlBar(),
-        Expanded(
-          key: Key('expanded'),
-          child: actionList(),
-        ),
-      ],
-    );
+    return actionList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.pullRequest.title),
         automaticallyImplyLeading: true,
       ),
       body: body(),
@@ -103,37 +74,27 @@ class _ActionListViewState extends State<ActionListView> {
 
   Action configureAction(Action action) {
     setParameterValue<Uri>(
-        action, PrParameter.parameterName, Uri.parse(_prUrl));
+        action, PrParameter.parameterName, widget.pullRequest.url);
     return action;
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _prName = widget.prName;
-    _prUrl = widget.prHistory['$_prName']['url'];
-    _urlController.text = widget.prName;
+  Future<void> dispatchAction(Action action) async {
+    final adapter = await getBenderAdapter();
+    final receipt = await adapter(action.message);
+
+    // TODO: Communicate success or failure to the user
+    if (receipt.wasSuccessful) {
+      print('Bendroid message succeeded');
+    } else {
+      print(receipt.toString());
+    }
+
+    setState(() {
+      _isWaiting = false;
+    });
   }
 
   bool isRunnable(Action action) {
     return action.isRunnable(action);
-  }
-
-  Widget urlBar() {
-    return TextField(
-      controller: _urlController,
-      keyboardType: TextInputType.url,
-      onChanged: (value) {
-        setState(() {
-          _prName = value;
-        });
-      },
-      style: Theme.of(context).textTheme.title,
-      decoration: InputDecoration(
-        hintText: 'Pull request URL',
-        contentPadding: EdgeInsets.all(16.0),
-      ),
-      key: Key('url-bar'),
-    );
   }
 }

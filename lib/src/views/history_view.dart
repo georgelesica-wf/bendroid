@@ -1,28 +1,26 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:bendroid/action_list_view.dart';
+import 'package:bendroid/src/mixins/popup_menu.dart';
+import 'package:bendroid/src/views/action_list_view.dart';
 import 'package:bendroid/constants.dart';
-import 'package:bendroid/settings_view.dart';
+import 'package:bendroid/src/views/settings_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:github/server.dart';
 import 'package:path_provider/path_provider.dart';
 
 class HistoryView extends StatefulWidget {
-  final String title;
-
-  HistoryView({Key key, this.title}) : super(key: key);
+  HistoryView({Key key}) : super(key: key);
 
   @override
   State<StatefulWidget> createState() => _HistoryViewState();
 }
 
-class _HistoryViewState extends State<HistoryView> {
+class _HistoryViewState extends State<HistoryView> with PopupMenu {
   static const platform = const MethodChannel('app.channel.shared.data');
-  File myHistoryFile;
-  bool fileExists = false;
-  Map<String, dynamic> history = {};
+
+  Set<PullRequest> history = Set<PullRequest>();
 
   @override
   Widget build(BuildContext context) {
@@ -33,31 +31,12 @@ class _HistoryViewState extends State<HistoryView> {
         leading: const Icon(Icons.child_care),
         title: const Text('History'),
         actions: <Widget>[
-          PopupMenuButton<String>(
-              icon: const Icon(
-                Icons.dehaze,
-              ),
-              onSelected: choiceAction,
-              itemBuilder: (BuildContext context) {
-                return choices.map((String choice) {
-                  return PopupMenuItem<String>(
-                    value: choice,
-                    child: Text(choice),
-                  );
-                }).toList();
-              }),
+          popupMenu(context),
         ],
         automaticallyImplyLeading: true,
       ),
       body: _body(),
     );
-  }
-
-  void choiceAction(String choice) {
-    switch (choice) {
-      default:
-        handleSettings();
-    }
   }
 
   void createFile(Map<String, dynamic> content) {
@@ -80,14 +59,6 @@ class _HistoryViewState extends State<HistoryView> {
         ),
       );
     }
-  }
-
-  void handleSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SettingsView(),
-      ),
-    );
   }
 
   Widget historyItem(String prName, Map<String, dynamic> prInfo) {

@@ -1,6 +1,6 @@
 import 'package:bender/bender_vm.dart';
-import 'package:bendroid/history_view.dart';
-import 'package:bendroid/settings_controller.dart';
+import 'package:bendroid/src/views/history_view.dart';
+import 'package:bendroid/src/controllers/settings_controller.dart';
 import 'package:flutter/material.dart';
 
 Future<BenderAdapter> getBenderAdapter() async {

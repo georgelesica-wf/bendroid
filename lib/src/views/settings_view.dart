@@ -1,4 +1,4 @@
-import 'package:bendroid/settings_controller.dart';
+import 'package:bendroid/src/controllers/settings_controller.dart';
 import 'package:flutter/material.dart';
 
 class SettingsView extends StatefulWidget {
