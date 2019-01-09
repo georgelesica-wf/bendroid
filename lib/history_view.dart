@@ -39,7 +39,7 @@ class _HistoryViewState extends State<HistoryView> {
               ),
               onSelected: choiceAction,
               itemBuilder: (BuildContext context) {
-                return Constants.choices.map((String choice) {
+                return choices.map((String choice) {
                   return PopupMenuItem<String>(
                     value: choice,
                     child: Text(choice),
@@ -53,25 +53,24 @@ class _HistoryViewState extends State<HistoryView> {
     );
   }
 
-  void choiceAction(choice) {
+  void choiceAction(String choice) {
     switch (choice) {
       default:
         handleSettings();
     }
   }
 
-  void createFile(content) {
+  void createFile(Map<String, dynamic> content) {
     myHistoryFile.createSync();
     fileExists = true;
     myHistoryFile.writeAsStringSync(json.encode(content));
-    this.setState(
-        () => history = json.decode(myHistoryFile.readAsStringSync()));
+    this.setState(() => history = content);
   }
 
   void getSharedText() async {
     var sharedData = await platform.invokeMethod("getSharedPrUrl");
     if (sharedData != null) {
-      List link = sharedData.replaceAll(Constants.homeLink, '').split('/');
+      List link = sharedData.replaceAll(homeLink, '').split('/');
       String prName = link[0] + '-' + link[link.length - 1];
       writeToFile(prName, sharedData);
       Navigator.of(context).push(
@@ -91,7 +90,7 @@ class _HistoryViewState extends State<HistoryView> {
     );
   }
 
-  Widget historyItem(prName, prInfo) {
+  Widget historyItem(String prName, Map<String, dynamic> prInfo) {
     return ListTile(
       key: Key(prInfo['url']),
       title: Text(prName),
@@ -100,7 +99,7 @@ class _HistoryViewState extends State<HistoryView> {
     );
   }
 
-  void historyTapHandler(prName) {
+  void historyTapHandler(String prName) {
     updateFile(prName);
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -115,7 +114,7 @@ class _HistoryViewState extends State<HistoryView> {
     super.initState();
     getApplicationDocumentsDirectory().then((Directory dir) {
       directoryPath = dir.path;
-      myHistoryFile = new File(directoryPath + '/' + Constants.fileName);
+      myHistoryFile = new File(directoryPath + '/' + fileName);
       fileExists = myHistoryFile.existsSync();
       if (fileExists) {
         this.setState(
@@ -135,36 +134,38 @@ class _HistoryViewState extends State<HistoryView> {
     return keys;
   }
 
-  void updateFile(prName) {
-    Map<String, dynamic> content = {
+  void updateFile(String prName) {
+    Map<String, dynamic> newContent = {
       'url': history['$prName']['url'],
       'useTime': DateTime.now().millisecondsSinceEpoch
     };
-    Map<String, dynamic> myHistoryContent =
-        json.decode(myHistoryFile.readAsStringSync());
-    myHistoryContent.update(prName, (_) => content);
+    Map<String, dynamic> myHistoryContent;
+    myHistoryFile
+        .readAsString()
+        .then((String content) => myHistoryContent = json.decode(content));
+    myHistoryContent.update(prName, (_) => newContent);
     myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-    this.setState(
-        () => history = json.decode(myHistoryFile.readAsStringSync()));
+    this.setState(() => history = myHistoryContent);
   }
 
-  void writeToFile(prName, prUrl) {
-    Map<String, dynamic> content = {
+  void writeToFile(String prName, String prUrl) {
+    Map<String, dynamic> newContent = {
       prName: {'url': prUrl, 'useTime': DateTime.now().millisecondsSinceEpoch}
     };
     if (fileExists) {
-      Map<String, dynamic> myHistoryContent =
-          json.decode(myHistoryFile.readAsStringSync());
-      if (myHistoryContent.keys.length >= Constants.historyLimit) {
+      Map<String, dynamic> myHistoryContent;
+      myHistoryFile
+          .readAsString()
+          .then((String content) => myHistoryContent = json.decode(content));
+      if (myHistoryContent.keys.length >= historyLimit) {
         final keys = sortHistoryKeys();
-        myHistoryContent.remove(keys[Constants.historyLimit - 1]);
+        myHistoryContent.remove(keys[historyLimit - 1]);
       }
-      myHistoryContent.addAll(content);
+      myHistoryContent.addAll(newContent);
       myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-      this.setState(
-          () => history = json.decode(myHistoryFile.readAsStringSync()));
+      this.setState(() => history = myHistoryContent);
     } else {
-      createFile(content);
+      createFile(newContent);
     }
   }
 

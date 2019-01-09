@@ -81,7 +81,7 @@ class _SettingsViewState extends State<SettingsView> {
     _loadSettings();
   }
 
-  String pickToken(tokenName) {
+  String pickToken(String tokenName) {
     switch (tokenName) {
       case 'GitHub':
         return _gitHubToken;
@@ -90,7 +90,7 @@ class _SettingsViewState extends State<SettingsView> {
     }
   }
 
-  void setToken(tokenName, value) {
+  void setToken(String tokenName, String value) {
     switch (tokenName) {
       case 'GitHub':
         _gitHubToken = value;
@@ -208,7 +208,7 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
-  Future<void> _tokenDialog(title, token) async {
+  Future<void> _tokenDialog(String title, String token) async {
     final controller = TextEditingController(text: token);
     await showDialog(
       context: context,
@@ -241,7 +241,7 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _tokenSettingTile(title) {
+  Widget _tokenSettingTile(String title) {
     var token = pickToken(title);
     return ListTile(
       key: Key('$title-token'),
@@ -254,7 +254,7 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _tokenSubtitle(title, token) {
+  Widget _tokenSubtitle(String title, String token) {
     if (token == '') {
       return Text(
         'Required for the $title adapter',
