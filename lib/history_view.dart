@@ -122,7 +122,6 @@ class _HistoryViewState extends State<HistoryView> {
       }
     }).then((_) {
       getSharedText();
-      _getFromApi('https://github.com/Workiva/text_doc_client/pull/7787');
     });
   }
 
@@ -142,10 +141,12 @@ class _HistoryViewState extends State<HistoryView> {
     Map<String, dynamic> myHistoryContent;
     myHistoryFile
         .readAsString()
-        .then((String content) => myHistoryContent = json.decode(content));
-    myHistoryContent.update(prName, (_) => newContent);
-    myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-    this.setState(() => history = myHistoryContent);
+        .then((String content) => myHistoryContent = json.decode(content))
+        .then((_) {
+      myHistoryContent.update(prName, (_) => newContent);
+      myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+      this.setState(() => history = myHistoryContent);
+    });
   }
 
   void writeToFile(String prName, String prUrl) {
@@ -156,14 +157,16 @@ class _HistoryViewState extends State<HistoryView> {
       Map<String, dynamic> myHistoryContent;
       myHistoryFile
           .readAsString()
-          .then((String content) => myHistoryContent = json.decode(content));
-      if (myHistoryContent.keys.length >= historyLimit) {
-        final keys = sortHistoryKeys();
-        myHistoryContent.remove(keys[historyLimit - 1]);
-      }
-      myHistoryContent.addAll(newContent);
-      myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-      this.setState(() => history = myHistoryContent);
+          .then((String content) => myHistoryContent = json.decode(content))
+          .then((_) {
+        if (myHistoryContent.keys.length >= historyLimit) {
+          final keys = sortHistoryKeys();
+          myHistoryContent.remove(keys[historyLimit - 1]);
+        }
+        myHistoryContent.addAll(newContent);
+        myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
+        this.setState(() => history = myHistoryContent);
+      });
     } else {
       createFile(newContent);
     }
