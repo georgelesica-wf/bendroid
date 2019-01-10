@@ -11,11 +11,13 @@ HistoryItem _$HistoryItemFromJson(Map<String, dynamic> json) {
       pullRequest: json['pullRequest'] == null
           ? null
           : PullRequest.fromJson(json['pullRequest'] as Map<String, dynamic>),
-      timestamp: json['timestamp'] as int);
+      timestamp: json['timestamp'] == null
+          ? null
+          : DateTime.parse(json['timestamp'] as String));
 }
 
 Map<String, dynamic> _$HistoryItemToJson(HistoryItem instance) =>
     <String, dynamic>{
       'pullRequest': instance.pullRequest,
-      'timestamp': instance.timestamp
+      'timestamp': instance.timestamp?.toIso8601String()
     };

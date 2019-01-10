@@ -7,9 +7,7 @@ import 'package:flutter/material.dart';
 class ActionListView extends StatefulWidget {
   final PullRequest pullRequest;
 
-  ActionListView(
-      {Key key, this.pullRequest})
-      : super(key: key);
+  ActionListView({Key key, this.pullRequest}) : super(key: key);
 
   @override
   _ActionListViewState createState() => _ActionListViewState();

@@ -6,7 +6,7 @@ part 'history_item.g.dart';
 @JsonSerializable()
 class HistoryItem {
   final PullRequest pullRequest;
-  final int timestamp;
+  final DateTime timestamp;
 
   HistoryItem({
     this.pullRequest,
@@ -22,4 +22,11 @@ class HistoryItem {
   }
 
   Map<String, dynamic> toJson() => _$HistoryItemToJson(this);
+
+  static Iterable<HistoryItem> listFromJson(List<Map<String, dynamic>> list) {
+    if (list == null) {
+      return null;
+    }
+    return list.map((item) => fromJson(item));
+  }
 }

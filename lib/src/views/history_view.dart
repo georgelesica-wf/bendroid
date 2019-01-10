@@ -1,14 +1,11 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:bendroid/src/mixins/popup_menu.dart';
-import 'package:bendroid/src/views/action_list_view.dart';
 import 'package:bendroid/constants.dart';
-import 'package:bendroid/src/views/settings_view.dart';
+import 'package:bendroid/src/controllers/history_controller.dart';
+import 'package:bendroid/src/mixins/popup_menu.dart';
+import 'package:bendroid/src/models/history_item.dart';
+import 'package:bendroid/src/models/pull_request.dart';
+import 'package:bendroid/src/views/action_list_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:github/server.dart';
-import 'package:path_provider/path_provider.dart';
 
 class HistoryView extends StatefulWidget {
   HistoryView({Key key}) : super(key: key);
@@ -19,8 +16,8 @@ class HistoryView extends StatefulWidget {
 
 class _HistoryViewState extends State<HistoryView> with PopupMenu {
   static const platform = const MethodChannel('app.channel.shared.data');
-
-  Set<PullRequest> history = Set<PullRequest>();
+  HistoryController historyController = new HistoryController();
+  List<HistoryItem> history = List<HistoryItem>();
 
   @override
   Widget build(BuildContext context) {
@@ -39,43 +36,40 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
     );
   }
 
-  void createFile(Map<String, dynamic> content) {
-    myHistoryFile.createSync();
-    fileExists = true;
-    myHistoryFile.writeAsStringSync(json.encode(content));
-    this.setState(() => history = content);
-  }
-
   void getSharedText() async {
     var sharedData = await platform.invokeMethod("getSharedPrUrl");
     if (sharedData != null) {
       List link = sharedData.replaceAll(homeLink, '').split('/');
       String prName = link[0] + '-' + link[link.length - 1];
-      writeToFile(prName, sharedData);
+
+      PullRequest pullRequest = new PullRequest(
+          status: PullRequestStatus.open,
+          title: prName,
+          url: Uri.parse(sharedData));
+
+      await historyController.insert(pullRequest);
+
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) =>
-              ActionListView(prName: prName, prHistory: history),
-        ),
+            builder: (context) => ActionListView(pullRequest: pullRequest)),
       );
     }
   }
 
-  Widget historyItem(String prName, Map<String, dynamic> prInfo) {
+  Widget historyItem(HistoryItem historyItem) {
     return ListTile(
-      key: Key(prInfo['url']),
-      title: Text(prName),
-      subtitle: Text(prInfo['useTime'].toString()),
-      onTap: () => historyTapHandler(prName),
+      key: Key(historyItem.pullRequest.url.toString()),
+      title: Text(historyItem.pullRequest.title),
+      subtitle: Text(historyItem.timestamp.toLocal().toString()),
+      onTap: () => historyTapHandler(historyItem.pullRequest),
     );
   }
 
-  void historyTapHandler(String prName) {
-    updateFile(prName);
+  void historyTapHandler(PullRequest pullRequest) {
+    historyController.insert(pullRequest);
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) =>
-            ActionListView(prName: prName, prHistory: history),
+        builder: (context) => ActionListView(pullRequest: pullRequest),
       ),
     );
   }
@@ -87,62 +81,11 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
   }
 
   void setDocumentInformation() async {
-    Directory directory = await getApplicationDocumentsDirectory();
-    File myHistoryFile = new File(directory.path + '/' + fileName);
-    bool fileExists = myHistoryFile.existsSync();
-    Map<String, dynamic> myHistory =
-        json.decode(await myHistoryFile.readAsString());
-    if (fileExists) {
-      this.setState(() {
-        history = myHistory;
-      });
-    }
+    List<HistoryItem> myHistory = await historyController.getList();
+    myHistory
+        .sort((key, nextKey) => nextKey.timestamp.compareTo(key.timestamp));
+    this.setState(() => history = myHistory);
     getSharedText();
-
-    // var github = createGitHubClient();
-    // github.pullRequests
-    //     .get(new RepositorySlug("olesiathoms-wk", "bendroid"), 1);
-  }
-
-  List<String> sortHistoryKeys() {
-    final List<String> keys = history.keys.toList();
-    // Sort keys from the most recent to the oldest one
-    keys.sort((key, nextKey) =>
-        history['$nextKey']['useTime'] - history['$key']['useTime']);
-    return keys;
-  }
-
-  void updateFile(String prName) async {
-    Map<String, dynamic> newContent = {
-      'url': history['$prName']['url'],
-      'useTime': DateTime.now().millisecondsSinceEpoch
-    };
-    Map<String, dynamic> myHistoryContent =
-        json.decode(await myHistoryFile.readAsString());
-    myHistoryContent.update(prName, (_) => newContent);
-    myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-    this.setState(() => history = myHistoryContent);
-    // });
-  }
-
-  void writeToFile(String prName, String prUrl) async {
-    Map<String, dynamic> newContent = {
-      prName: {'url': prUrl, 'useTime': DateTime.now().millisecondsSinceEpoch}
-    };
-    if (fileExists) {
-      Map<String, dynamic> myHistoryContent =
-          json.decode(await myHistoryFile.readAsString());
-
-      if (myHistoryContent.keys.length >= historyLimit) {
-        final keys = sortHistoryKeys();
-        myHistoryContent.remove(keys[historyLimit - 1]);
-      }
-      myHistoryContent.addAll(newContent);
-      myHistoryFile.writeAsStringSync(json.encode(myHistoryContent));
-      this.setState(() => history = myHistoryContent);
-    } else {
-      createFile(newContent);
-    }
   }
 
   Widget _body() {
@@ -159,25 +102,6 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
 
     return ListView(
         key: Key('<history-list'),
-        children: sortHistoryKeys()
-            .map((key) => historyItem(key.toString(), history['$key']))
-            .toList());
-  }
-
-  _getFromApi(url) async {
-    try {
-      var httpClient = new HttpClient();
-      var uri = new Uri.https('api.github.com', url);
-      var request = await httpClient.getUrl(uri);
-      var response = await request.close();
-      if (response.statusCode == HttpStatus.OK) {
-        var json = await response.transform(utf8.decoder).join();
-        print('MY OBJECT: $json');
-      } else {
-        print('Something went wrong');
-      }
-    } catch (exception) {
-      NullThrownError();
-    }
+        children: history.map((key) => historyItem(key)).toList());
   }
 }
