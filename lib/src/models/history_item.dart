@@ -24,6 +24,7 @@ class HistoryItem {
   Map<String, dynamic> toJson() => _$HistoryItemToJson(this);
 
   static Iterable<HistoryItem> listFromJson(List<Map<String, dynamic>> list) {
+    print('trying to get list from json');
     if (list == null) {
       return null;
     }

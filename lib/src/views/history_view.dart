@@ -36,6 +36,15 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
     );
   }
 
+  Future<void> getHistory() async {
+    // List<HistoryItem> myHistory = await 
+    historyController.getList();
+    // myHistory
+    //     .sort((key, nextKey) => nextKey.timestamp.compareTo(key.timestamp));
+    // print('myHistory     $myHistory');
+    // this.setState(() => history = myHistory);
+  }
+
   void getSharedText() async {
     var sharedData = await platform.invokeMethod("getSharedPrUrl");
     if (sharedData != null) {
@@ -48,6 +57,7 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
           url: Uri.parse(sharedData));
 
       await historyController.insert(pullRequest);
+      // await getHistory();
 
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -77,15 +87,12 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
   @override
   void initState() {
     super.initState();
-    setDocumentInformation();
+    retrieveInformation();
   }
 
-  void setDocumentInformation() async {
-    List<HistoryItem> myHistory = await historyController.getList();
-    myHistory
-        .sort((key, nextKey) => nextKey.timestamp.compareTo(key.timestamp));
-    this.setState(() => history = myHistory);
-    getSharedText();
+  void retrieveInformation() async{
+      await getHistory();
+      getSharedText();
   }
 
   Widget _body() {
