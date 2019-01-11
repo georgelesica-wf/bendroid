@@ -14,7 +14,9 @@ class HistoryController {
     File myHistoryFile = new File(directory.path + '/' + fileName);
     try {
       List<dynamic> list = jsonDecode(await myHistoryFile.readAsString());
-      return HistoryItem.listFromJson(list);
+      final myHistoryItems = HistoryItem.listFromJson(list);
+      _items = myHistoryItems.toSet();
+      return myHistoryItems;
     } catch (err) {
       return [];
     }
@@ -32,9 +34,8 @@ class HistoryController {
       await file.writeAsString(
           jsonEncode(_items.map((item) => item.toJson()).toList()));
     } else {
-      bool isPullRequestExist =_items.contains(historyItem);
-      print('pullRequestExist $isPullRequestExist');
-      if(isPullRequestExist){
+      bool isPullRequestExist = _items.contains(historyItem);
+      if (isPullRequestExist) {
         _items.remove(historyItem);
       }
       _items.add(historyItem);

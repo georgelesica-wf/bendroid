@@ -14,7 +14,7 @@ class HistoryItem {
     this.timestamp,
   });
 
-    @override
+  @override
   int get hashCode => pullRequest.hashCode;
 
   @override
