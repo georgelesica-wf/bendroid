@@ -1,4 +1,4 @@
-import 'package:bendroid/settings_controller.dart';
+import 'package:bendroid/src/controllers/settings_controller.dart';
 import 'package:flutter/material.dart';
 
 class SettingsView extends StatefulWidget {
@@ -9,6 +9,11 @@ class SettingsView extends StatefulWidget {
 class _SettingsViewState extends State<SettingsView> {
   String _adapterValue;
 
+  String _hipChatTokenValue;
+
+  String _gitHubTokenValue;
+
+  String _hipChatEndpointValue;
   String get _adapter => _adapterValue ?? '';
 
   set _adapter(String value) {
@@ -21,21 +26,17 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
-  String _hipChatTokenValue;
+  String get _gitHubToken => _gitHubTokenValue ?? '';
 
-  String get _hipChatToken => _hipChatTokenValue ?? '';
-
-  set _hipChatToken(String value) {
-    saveHipChatToken(value).then((_) {
-      loadHipChatToken().then((newValue) {
+  set _gitHubToken(String value) {
+    saveGitHubToken(value).then((_) {
+      loadGitHubToken().then((newValue) {
         setState(() {
-          _hipChatTokenValue = newValue;
+          _gitHubTokenValue = newValue;
         });
       });
     });
   }
-
-  String _hipChatEndpointValue;
 
   String get _hipChatEndpoint => _hipChatEndpointValue ?? '';
 
@@ -49,10 +50,16 @@ class _SettingsViewState extends State<SettingsView> {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
+  String get _hipChatToken => _hipChatTokenValue ?? '';
+
+  set _hipChatToken(String value) {
+    saveHipChatToken(value).then((_) {
+      loadHipChatToken().then((newValue) {
+        setState(() {
+          _hipChatTokenValue = newValue;
+        });
+      });
+    });
   }
 
   @override
@@ -68,24 +75,29 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _body() {
-    return ListView(
-      key: Key('body-list'),
-      children: <Widget>[
-        _adapterSettingTile(),
-        _hipChatTokenSettingTile(),
-        _hipChatEndpointSettingTile(),
-      ],
-    );
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
   }
 
-  Widget _adapterSettingTile() {
-    return ListTile(
-      key: Key('adapter'),
-      title: const Text('Adapter'),
-      subtitle: Text(_adapter),
-      onTap: _adapterDialog,
-    );
+  String pickToken(String tokenName) {
+    switch (tokenName) {
+      case 'GitHub':
+        return _gitHubToken;
+      default:
+        return _hipChatToken;
+    }
+  }
+
+  void setToken(String tokenName, String value) {
+    switch (tokenName) {
+      case 'GitHub':
+        _gitHubToken = value;
+        break;
+      default:
+        _hipChatToken = value;
+    }
   }
 
   Future<void> _adapterDialog() async {
@@ -116,73 +128,24 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
-  Widget _hipChatTokenSettingTile() {
+  Widget _adapterSettingTile() {
     return ListTile(
-      key: Key('hipChat-token'),
-      title: const Text('HipChat Token'),
-      subtitle: _hipChatTokenSubtitle(),
-      onTap: _hipChatTokenDialog,
-      onLongPress: () {
-        _hipChatToken = null;
-      },
+      key: Key('adapter'),
+      title: const Text('Adapter'),
+      subtitle: Text(_adapter),
+      onTap: _adapterDialog,
     );
   }
 
-  Widget _hipChatTokenSubtitle() {
-    if (_hipChatToken == '') {
-      return const Text(
-        'Required for the HipChat adapter',
-        style: TextStyle(
-          color: Colors.redAccent,
-        ),
-      );
-    }
-
-    return Text(_hipChatToken);
-  }
-
-  Future<void> _hipChatTokenDialog() async {
-    final controller = TextEditingController(text: _hipChatToken);
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          key: Key('dialog'),
-          title: const Text('HipChat Token'),
-          content: TextField(
-            autofocus: true,
-            controller: controller,
-            key: Key('text-field'),
-          ),
-          actions: <Widget>[
-            MaterialButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            MaterialButton(
-              child: const Text("OK"),
-              onPressed: () {
-                _hipChatToken = controller.text;
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _hipChatEndpointSettingTile() {
-    return ListTile(
-      key: Key('endpoint'),
-      title: const Text('HipChat Endpoint'),
-      subtitle: Text(_hipChatEndpoint),
-      onTap: _hipChatEndpointDialog,
-      onLongPress: () {
-        _hipChatEndpoint = null;
-      },
+  Widget _body() {
+    return ListView(
+      key: Key('body-list'),
+      children: <Widget>[
+        _adapterSettingTile(),
+        _tokenSettingTile('HipChat'),
+        _hipChatEndpointSettingTile(),
+        _tokenSettingTile('GitHub'),
+      ],
     );
   }
 
@@ -219,15 +182,88 @@ class _SettingsViewState extends State<SettingsView> {
     );
   }
 
+  Widget _hipChatEndpointSettingTile() {
+    return ListTile(
+      key: Key('endpoint'),
+      title: const Text('HipChat Endpoint'),
+      subtitle: Text(_hipChatEndpoint),
+      onTap: _hipChatEndpointDialog,
+      onLongPress: () {
+        _hipChatEndpoint = null;
+      },
+    );
+  }
+
   Future<void> _loadSettings() async {
     final loadedAdapter = await loadAdapter();
+    final loadedGitHubToken = await loadGitHubToken();
     final loadedHipChatToken = await loadHipChatToken();
     final loadedHipChatEndpoint = await loadHipChatEndpoint();
 
     setState(() {
       _adapterValue = loadedAdapter;
+      _gitHubTokenValue = loadedGitHubToken;
       _hipChatTokenValue = loadedHipChatToken;
       _hipChatEndpointValue = loadedHipChatEndpoint;
     });
+  }
+
+  Future<void> _tokenDialog(String title, String token) async {
+    final controller = TextEditingController(text: token);
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          key: Key('dialog'),
+          title: Text('$title Token'),
+          content: TextField(
+            autofocus: true,
+            controller: controller,
+            key: Key('text-field'),
+          ),
+          actions: <Widget>[
+            MaterialButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            MaterialButton(
+              child: const Text("OK"),
+              onPressed: () {
+                setToken(title, controller.text);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _tokenSettingTile(String title) {
+    var token = pickToken(title);
+    return ListTile(
+      key: Key('$title-token'),
+      title: Text('$title Token'),
+      subtitle: _tokenSubtitle(title, token),
+      onTap: () => _tokenDialog(title, token),
+      onLongPress: () {
+        setToken(title, '');
+      },
+    );
+  }
+
+  Widget _tokenSubtitle(String title, String token) {
+    if (token == '') {
+      return Text(
+        'Required for the $title adapter',
+        style: TextStyle(
+          color: Colors.redAccent,
+        ),
+      );
+    }
+
+    return Text(token);
   }
 }
