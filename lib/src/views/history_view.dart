@@ -37,12 +37,11 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
   }
 
   Future<void> getHistory() async {
-    // List<HistoryItem> myHistory = await 
-    historyController.getList();
-    // myHistory
-    //     .sort((key, nextKey) => nextKey.timestamp.compareTo(key.timestamp));
-    // print('myHistory     $myHistory');
-    // this.setState(() => history = myHistory);
+    final historyList = await historyController.getList();
+    List<HistoryItem> myHistory = historyList.toList();
+    myHistory
+        .sort((key, nextKey) => nextKey.timestamp.compareTo(key.timestamp));
+    this.setState(() => history = myHistory);
   }
 
   void getSharedText() async {
@@ -57,7 +56,7 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
           url: Uri.parse(sharedData));
 
       await historyController.insert(pullRequest);
-      // await getHistory();
+      await getHistory();
 
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -75,8 +74,9 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
     );
   }
 
-  void historyTapHandler(PullRequest pullRequest) {
-    historyController.insert(pullRequest);
+  Future<void> historyTapHandler(PullRequest pullRequest) async {
+    await historyController.insert(pullRequest);
+    await getHistory();
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ActionListView(pullRequest: pullRequest),
@@ -90,9 +90,9 @@ class _HistoryViewState extends State<HistoryView> with PopupMenu {
     retrieveInformation();
   }
 
-  void retrieveInformation() async{
-      await getHistory();
-      getSharedText();
+  void retrieveInformation() async {
+    await getHistory();
+    getSharedText();
   }
 
   Widget _body() {
